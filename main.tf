@@ -155,7 +155,7 @@ data "aws_iam_policy_document" "assume_role_policy" {
 resource "aws_iam_role" "s3_access_for_sftp_users" {
   for_each = var.enabled ? local.user_names_map : {}
 
-  name                = module.labels.id
+  name                = join("_", tolist([module.labels.id, each.value.user_name]))
   assume_role_policy  = join("", data.aws_iam_policy_document.assume_role_policy[*].json)
   managed_policy_arns = [aws_iam_policy.s3_access_for_sftp_users[each.value.user_name].arn]
 }
@@ -245,19 +245,13 @@ resource "aws_transfer_user" "transfer_server_user" {
   server_id           = join("", aws_transfer_server.transfer_server[*].id)
   role                = aws_iam_role.s3_access_for_sftp_users[each.value.user_name].arn
   user_name           = each.value.user_name
-  home_directory_type = lookup(each.value, "home_directory_type", null) != null ? lookup(each.value, "home_directory_type") : (var.restricted_home ? "LOGICAL" : "PATH")
-  home_directory      = lookup(each.value, "home_directory", null) != null ? lookup(each.value, "home_directory") : (!var.restricted_home ? "/${lookup(each.value, "s3_bucket_name", var.s3_bucket_name)}" : null)
-  tags                = module.labels.tags
+  home_directory_type = "LOGICAL"
+  # home_directory      = "/${var.s3_bucket_name}/${each.value.user_name}"
+  tags = module.labels.tags
 
-  dynamic "home_directory_mappings" {
-    for_each = var.restricted_home ? (
-      lookup(each.value, "home_directory_mappings", null) != null ? lookup(each.value, "home_directory_mappings") : {}
-    ) : {}
-
-    content {
-      entry  = home_directory_mappings.key
-      target = home_directory_mappings.value
-    }
+  home_directory_mappings {
+    entry  = "/"
+    target = "/${var.s3_bucket_name}/$${Transfer:UserName}"
   }
 }
 
