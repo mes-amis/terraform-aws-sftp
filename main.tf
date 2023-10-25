@@ -47,7 +47,7 @@ data "aws_s3_bucket" "landing" {
 }
 
 resource "aws_cloudwatch_log_group" "sftp_log_group" {
-  name = "/aws/transfer/${module.labels.id}"
+  name              = "/aws/transfer/${module.labels.id}"
   retention_in_days = 90
 }
 
@@ -267,10 +267,10 @@ resource "aws_transfer_user" "transfer_server_user" {
 ##----------------------------------------------------------------------------------
 
 resource "aws_transfer_ssh_key" "transfer_server_ssh_key" {
-  count     = var.enabled ? length(var.sftp_users) : 0
+  for_each  = var.enabled ? local.user_names_map : {}
   server_id = join("", aws_transfer_server.transfer_server[*].id)
-  user_name = aws_transfer_user.transfer_server_user[count.index].user_name
-  body      = aws_transfer_user.transfer_server_user[count.index].public_key
+  user_name = each.value.user_name
+  body      = each.value.public_key
 }
 
 
