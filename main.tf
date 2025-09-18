@@ -247,9 +247,9 @@ resource "aws_transfer_ssh_key" "transfer_server_ssh_key" {
 ##----------------------------------------------------------------------------------
 
 resource "aws_eip" "sftp" {
-  count = var.enabled && var.eip_enabled ? length(var.subnet_ids) : 0
-  vpc   = local.is_vpc
-  tags  = module.labels.tags
+  count  = var.enabled && var.eip_enabled ? length(var.subnet_ids) : 0
+  domain = "vpc"
+  tags   = module.labels.tags
 }
 
 ##----------------------------------------------------------------------------------
